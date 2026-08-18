@@ -1,0 +1,200 @@
+{
+  "about": [
+    "THE PAGE'S ONLY SETTINGS. Rewrite every line of coaching, swap the clip,",
+    "change the size, number or placement of targets, or the speed the",
+    "demonstration clip plays at, and nothing in the JavaScript changes.",
+    "",
+    "DROP YOUR CLIPS IN media/ AND NAME THEM HERE. A named file that is not",
+    "there is reported on screen, by name, never silently skipped.",
+    "",
+    "control is the interaction each lesson needs. The page reads which controls",
+    "the operator actually has switched on (GET /api/kiosk/status, then live",
+    "controls_changed) and says so by name instead of asking for something that",
+    "physically cannot happen."
+  ],
+  "media_dir": "media",
+  "camera": {
+    "about": [
+      "The live camera view. roi_fill is how much of the circular mask the",
+      "tracked-hand crop is allowed to fill when the view zooms in: 0.66 means",
+      "the crop is never drawn wider than two thirds of the circle, so there is",
+      "always frame around it and it never reads as being zoomed too far.",
+      "",
+      "The zoom is separately capped at 1:1, so the picture is never magnified",
+      "past native camera pixels whatever this is set to."
+    ],
+    "roi_fill": 0.66
+  },
+  "game": {
+    "about": [
+      "The target game. Buttons appear over the screen; the visitor clears them",
+      "with the gesture the page is teaching, then the page moves on.",
+      "",
+      "`positions` are the target centres, in DESIGN PIXELS of the fixed",
+      "1920x1080 box. They are FIXED: the same three places every round, so the",
+      "visitor learns where to reach rather than hunting a new layout each time.",
+      "",
+      "`avoid` (the camera circle) and `avoid_rects` (the left column: the armed",
+      "light, the star, the arrow keys and the clip; and the coaching line under",
+      "the camera) are no longer used to place anything. They are the CHECK: on",
+      "load the page reports any position that overlaps one, by name, in the",
+      "console."
+    ],
+    "targets": 3,
+    "radius": 92,
+    "copy": {
+      "round": "Round",
+      "cleared": "Cleared",
+      "best": "Best round",
+      "start": "Move the cursor over the target, then click",
+      "progress": "Two to go",
+      "last": "One more",
+      "done": "Nice. Now the wave",
+      "complete": "Good Job",
+      "restart": ""
+    },
+    "avoid": {
+      "cx": 1420,
+      "cy": 540,
+      "r": 420
+    },
+    "clip_rate": 0.5,
+    "avoid_rects": [
+      {
+        "name": "left column",
+        "x": 86,
+        "y": 190,
+        "w": 520,
+        "h": 850
+      },
+      {
+        "name": "coaching line",
+        "x": 900,
+        "y": 930,
+        "w": 1010,
+        "h": 130
+      },
+      {
+        "name": "heading",
+        "x": 86,
+        "y": 40,
+        "w": 900,
+        "h": 150
+      }
+    ],
+    "restart_ms": 1600,
+    "positions": [
+      {
+        "x": 772,
+        "y": 330
+      },
+      {
+        "x": 898,
+        "y": 600
+      },
+      {
+        "x": 772,
+        "y": 870
+      }
+    ]
+  },
+  "lessons": [
+    {
+      "id": "click",
+      "title": "Hit the targets",
+      "control": "gesture_click_enabled",
+      "video": "index-finger.webm",
+      "instructions": [
+        "Hold one hand up, palm toward the screen, and point your index finger.",
+        "Move your fingertip to put the cursor on a target.",
+        "Tip your fingertip down, as if nodding it, and hold for a moment.",
+        "Clear all three targets to finish the round."
+      ],
+      "scale": {
+        "kind": "click",
+        "label": "Click",
+        "hint_idle": "Present a finger to bring the cursor up",
+        "hint_working": "Keep tipping the finger forward, and hold",
+        "hint_pass": "Hit",
+        "show_cursor_state": true,
+        "cursor_live": "Cursor engaged",
+        "cursor_idle": "Present Index Finger"
+      }
+    },
+    {
+      "id": "wave",
+      "title": "Now wave to move on",
+      "control": "gesture_wave_enabled",
+      "video": "open-palm-wave.webm",
+      "instructions": [],
+      "scale": {
+        "kind": "wave",
+        "label": "Wave",
+        "second_label": "Lean",
+        "hint_idle": "Hold your open hand up, palm toward the screen",
+        "hint_learning": "Hold still for a moment",
+        "hint_working": "Wave right or left",
+        "hint_no_side": "Wave further to one side",
+        "hint_descending": "Keep your hand up",
+        "hint_pass_forward": "Right Arrow",
+        "hint_pass_back": "Left Arrow",
+        "show_cursor_state": true,
+        "cursor_live": "Open palm ready",
+        "cursor_idle": "Present an Open Palm"
+      }
+    }
+  ],
+  "parked": {
+    "about": [
+      "Lessons that are written but not shown. Move one into `lessons` to",
+      "bring it back. Nothing reads this key.",
+      "",
+      "present / wave: parked when the page became a target game.",
+      "dial: also parked; it needs a media/dial.webm",
+      "clip, which has not been shot.",
+      "",
+      "Their scoring paths (scalePose, scaleWave, scaleRotate and the",
+      "matching gate readouts) are all still in training.js and still work."
+    ],
+    "lessons": [
+      {
+        "id": "present",
+        "title": "Present your index finger",
+        "control": "gesture_cursor_enabled",
+        "video": "index-finger.webm",
+        "instructions": [
+          "Hold one hand up, at about chest height, palm toward the screen.",
+          "Point your index finger up and curl the other fingers in.",
+          "That is the whole gesture. A cursor appears and follows your fingertip."
+        ],
+        "scale": {
+          "kind": "pose",
+          "label": "Finger presented",
+          "hint_idle": "Raise a hand into view",
+          "hint_working": "Curl the other fingers in",
+          "hint_pass": "That is it. The cursor is yours"
+        }
+      },
+      {
+        "id": "dial",
+        "title": "Rotate the dial",
+        "control": "gesture_rotate_enabled",
+        "video": "dial.webm",
+        "instructions": [
+          "Open your hand and spread your fingers apart.",
+          "Keep the palm toward the screen and roll your hand like turning a dial.",
+          "Roll clockwise to go up, counter-clockwise to go down.",
+          "Holding the roll keeps going, like holding a key down."
+        ],
+        "scale": {
+          "kind": "rotate",
+          "label": "Roll",
+          "hint_idle": "Open your hand and spread your fingers",
+          "hint_learning": "Hold still a moment while it learns your resting hand",
+          "hint_working": "Keep rolling",
+          "hint_pass": "Turned"
+        }
+      }
+    ]
+  }
+}

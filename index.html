@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Gesture Training</title>
+<meta name="description" content="TouchFree gesture training — practise a gesture and see exactly why an attempt did or did not register.">
+<style>
+/* =====================================================================
+   Gesture Training — the page shell.
+
+   THIS FILE IS MARKUP AND STYLE ONLY. Every behaviour is in training.js
+   and every word of lesson copy is in lessons.json. The element ids below
+   are that file's contract: it looks up exactly these and nothing else.
+
+   BLACK, WHITE, RED. Sampled from the product artwork rather than picked:
+   assets/icons/touchfree-icon.png and assets/icons/portrait-logo.png are
+   both ~80% #000000 with #FFFFFF and pure #FF0000 over it. The training
+   clips were shot to match (bleached white hands, pure black ground,
+   measured corner luma 0), so a clip sits straight on the page with no
+   matte, no border and no seam.
+
+   Fixed 1920x1080 design box scaled to fit, the same mechanic as
+   content/pages/bsi_videos. Every number here is a design pixel.
+   ===================================================================== */
+
+:root {
+  --ink:        #000000;
+  --ink-2:      #0b0b0b;
+  --line:       rgba(255, 255, 255, 0.13);
+  --line-soft:  rgba(255, 255, 255, 0.07);
+  --text:       #ffffff;
+  --text-dim:   rgba(255, 255, 255, 0.62);
+  --text-faint: rgba(255, 255, 255, 0.34);
+  /* Green and blue, taken from the Kiosk Manager so the training page and the
+     dashboard read as one product. No red anywhere. */
+  --accent:     #3B82F6;
+  --accent-lit: rgba(124, 192, 255, 1);
+  --accent-dim: rgba(124, 192, 255, 0.22);
+  --good:       #10B981;
+  --fit: 1;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: var(--ink);
+  color: var(--text);
+  overflow: hidden;
+  user-select: none;
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#stage {
+  position: absolute; top: 50%; left: 50%;
+  width: 1920px; height: 1080px;
+  transform: translate(-50%, -50%) scale(var(--fit));
+  transform-origin: center center;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+/* ---- header ---------------------------------------------------------- */
+
+.head { position: absolute; top: 62px; left: 110px; right: 110px; }
+
+.eyebrow {
+  font-size: 18px; letter-spacing: 0.34em; text-transform: uppercase;
+  color: var(--text-faint);
+}
+.eyebrow b { color: var(--accent); font-weight: 400; }
+
+#lessonTitle {
+  margin: 18px 0 0;
+  font-size: 62px; font-weight: 200; letter-spacing: -0.01em; line-height: 1.05;
+}
+
+#hud { position: absolute; top: 66px; right: 110px; display: flex; gap: 56px; text-align: right; }
+
+/* ---- the targets ------------------------------------------------------
+   A layer over everything, including the porthole. pointer-events are off on
+   the layer and on only for a live target, so nothing underneath is blocked
+   and a cleared target stops accepting clicks. */
+
+#play { position: absolute; inset: 0; z-index: 40; pointer-events: none; }
+
+.target {
+  position: absolute;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  color: var(--text);
+  font-size: 40px; font-weight: 200;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 140ms ease, border-color 140ms ease,
+              background 140ms ease, opacity 260ms ease;
+}
+.target::before {
+  /* the inner ring, so a target reads as a button and not a hole */
+  content: '';
+  position: absolute; inset: 13px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+.target:hover {
+  border-color: var(--accent-lit);
+  background: rgba(59, 130, 246, 0.18);
+  transform: scale(1.06);
+}
+.target.hit {
+  border-color: var(--good);
+  background: var(--good);
+  color: #fff;
+  opacity: 0;
+  transform: scale(1.35);
+  pointer-events: none;
+}
+
+/* ---- left column: cursor state, then the click star ------------------- */
+
+.lhs { position: absolute; left: 110px; top: 214px; width: 700px; }
+
+#cursorState {
+  display: flex; align-items: center; gap: 18px;
+  font-size: 22px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-faint);
+}
+#cursorState .dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+#cursorState.live { color: var(--text); }
+#cursorState.live .dot {
+  background: var(--good);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.7);
+}
+
+/* THE CLICK STAR.
+   Not a bar. It grows and brightens as the finger tips forward, snaps to full
+   on the click, then fades away on its own. A bar that sits there at rest is
+   furniture; a star that only appears when something happened is feedback. */
+#star {
+  position: relative;
+  width: 300px; height: 300px;
+  margin: 40px 0 0 40px;
+}
+#star svg { width: 100%; height: 100%; display: block; overflow: visible; }
+#star.landed .burst { fill: var(--good); }
+#star .burst {
+  fill: var(--accent);
+  transition: fill 120ms ease;
+  opacity: 0;
+  transform-origin: 50% 50%;
+  transform: scale(0.35);
+}
+/* ---- the score scale -------------------------------------------------- */
+
+/* The coaching line sits UNDER the camera, centred on it. It is about what
+   the person on screen should do next, so it belongs with their picture, not
+   in a column on the far side of the page. */
+#scale {
+  position: absolute;
+  left: 930px; top: 952px; width: 980px;
+  text-align: center;
+}
+
+#scale .verdict {
+  font-size: 30px; font-weight: 300; line-height: 1.4;
+  color: var(--text-dim);
+  min-height: 84px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+#scale .verdict.pass { color: var(--good); }
+#scale .verdict.warn { color: var(--text); }
+
+/* ---- the arrow keys ---------------------------------------------------
+   The wave does not move a cursor, it sends a key. These are the two keys it
+   can send, drawn as keycaps above the clip, and the one that just went out
+   lights up. TouchFree sends ArrowRight for forward and ArrowLeft for back. */
+
+#arrows {
+  position: absolute;
+  left: 160px; bottom: 492px;
+  display: none;
+  gap: 26px;
+}
+#arrows.on { display: flex; }
+
+.key {
+  width: 152px; height: 128px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  background: #0d0d0d;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 62px; line-height: 1;
+  color: var(--text-faint);
+  box-shadow: 0 6px 0 rgba(255, 255, 255, 0.06);
+  transition: transform 90ms ease, border-color 140ms ease,
+              color 140ms ease, background 140ms ease, box-shadow 90ms ease;
+}
+.key.lit {
+  border-color: var(--accent-lit);
+  background: rgba(59, 130, 246, 0.20);
+  color: #fff;
+  transform: translateY(5px);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.key .cap {
+  position: absolute; margin-top: 104px;
+  font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ---- the demonstration clip, bottom left ------------------------------ */
+
+#clip {
+  position: absolute; left: 110px; bottom: 54px;
+  width: 430px; height: 398px;
+}
+/* THE CLIP IS DRAWN, NOT DISPLAYED.
+   A <video> element is its own compositing layer, and Chromium tears that
+   layer down and rebuilds it every time a loop restarts. That re-composite
+   flashed the camera canvas beside it every single loop.
+   The <video> is now a decode source only, kept alive off-screen the same way
+   #feed is, and each frame is sampled into #clipCanvas. With no video layer
+   there is nothing left to re-promote. */
+#clipVideo {
+  position: absolute; width: 1px; height: 1px;
+  opacity: 0; pointer-events: none;
+}
+#clipCanvas {
+  width: 100%; height: 100%; display: block;
+  /* Pure black source on a pure black page: no matte and no border needed,
+     the clip simply occupies the corner. */
+}
+#clip .missing { display: none; }
+
+/* A named clip that is not on disk is reported BY NAME, never silently
+   skipped: a black rectangle teaches the visitor the product is broken. */
+#clip.no-media #clipCanvas { display: none; }
+#clip.no-media .missing {
+  display: flex; align-items: center;
+  width: 100%; height: 100%;
+  padding: 30px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  font-size: 18px; font-weight: 300; line-height: 1.6;
+  color: var(--text-faint);
+}
+#clip.no-media .missing code {
+  display: block; margin-top: 10px;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 17px; color: var(--accent-lit);
+  word-break: break-all;
+}
+
+/* ---- right column: the camera ----------------------------------------- */
+
+.rhs { position: absolute; left: 930px; top: 160px; width: 980px; }
+
+
+/* CAM_W / CAM_H in training.js. Keep the two in step.
+
+   THE PORTHOLE. The live view is masked to a circle whose diameter is the
+   full height of the camera frame, centred in it: 551px across, so radius
+   275.5 at (490, 275.5) in design pixels. clip-path takes the same transform
+   as the rest of the stage, so it scales with --fit like everything else.
+
+   The rectangle is gone entirely rather than left as a frame around a circle.
+   What is left is the picture and a thin ring. */
+#camera {
+  position: relative;
+  width: 980px; height: 760px;
+  background: transparent;
+}
+#view {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  clip-path: circle(380px at 490px 380px);
+}
+/* Two parts, because the canvas sits between them: a disc BEHIND, so the
+   porthole reads as solid before the first frame arrives, and a stroke ABOVE,
+   so the edge is not painted over by the canvas it is drawing. */
+.cam-ring {
+  position: absolute;
+  left: 110px; top: 0;
+  width: 760px; height: 760px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.cam-ring.disc { background: #050505; z-index: 0; }
+.cam-ring.edge { border: 1px solid var(--line-soft); z-index: 3; }
+
+/* The MJPEG <img> is never shown. It is the decode surface the canvas
+   samples, so the canvas can pan, zoom and mask one single stream. */
+#feed { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+#noFeed { display: none; }
+#camera.no-feed #noFeed {
+  display: flex; align-items: center; justify-content: center;
+  z-index: 4;
+  position: absolute; left: 110px; top: 0; width: 760px; height: 760px;
+  padding: 0 100px;
+  text-align: center;
+  font-size: 20px; font-weight: 300; line-height: 1.6;
+  color: var(--text-faint);
+}
+
+/* ---- training complete ------------------------------------------------ */
+
+#done {
+  position: absolute; inset: 0; z-index: 800;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.92);
+  opacity: 0;
+  transition: opacity 420ms ease;
+}
+#done.on { display: flex; opacity: 1; }
+#doneTitle {
+  font-size: 92px; font-weight: 200; letter-spacing: -0.01em;
+  color: var(--good);
+  text-align: center;
+}
+#doneSub {
+  margin-top: 26px;
+  font-size: 24px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+/* ---- fault ------------------------------------------------------------
+   Not a wall of alarm colour. This page faces visitors, and a full screen of
+   warning reads as "the product is broken". The card states the one thing
+   that is wrong and nothing else. */
+
+#fault {
+  position: absolute; inset: 0; z-index: 900;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.9);
+}
+#fault.on { display: flex; }
+#fault .card {
+  max-width: 940px; padding: 54px 62px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 14px;
+}
+#fault h3 { margin: 0 0 18px; font-size: 32px; font-weight: 300; }
+#faultBody { margin: 0; font-size: 21px; font-weight: 300; line-height: 1.6; color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div class="head">
+    <div class="eyebrow">TouchFree <b>&bull;</b> Gesture Training</div>
+    <h1 id="lessonTitle">&nbsp;</h1>
+  </div>
+
+  <div class="lhs">
+    <div id="cursorState"><span class="dot"></span><span id="cursorText">No cursor</span></div>
+    <div id="star">
+      <svg viewBox="-150 -150 300 300" aria-hidden="true">
+        <path class="burst" id="starBurst" d="
+          M 0 -140 L 26 -44 L 122 -44 L 45 15 L 74 111 L 0 52 L -74 111 L -45 15
+          L -122 -44 L -26 -44 Z"></path>
+      </svg>
+    </div>
+  </div>
+
+  <div id="scale"></div>
+
+  <div id="arrows">
+    <div class="key" id="keyLeft">&larr;</div>
+    <div class="key" id="keyRight">&rarr;</div>
+  </div>
+
+  <div id="clip">
+    <!-- NO autoplay, NO loop. A looping <video> restarted its decode every
+         couple of seconds and flashed the page each time. The real cause was
+         elsewhere (see openFeed in training.js); the clip loops again now. -->
+    <video id="clipVideo" muted playsinline preload="auto"></video>
+    <canvas id="clipCanvas"></canvas>
+    <div class="missing">
+      <div>
+        This lesson&rsquo;s clip is not in the media folder:
+        <code id="missingFile"></code>
+      </div>
+    </div>
+  </div>
+
+  <div class="rhs">
+    <div id="camera">
+      <div class="cam-ring disc"></div>
+      <img id="feed" alt="">
+      <canvas id="view"></canvas>
+      <div class="cam-ring edge"></div>
+      <div id="noFeed"></div>
+    </div>
+  </div>
+  <div id="play"></div>
+</div>
+
+<div id="done">
+  <div class="done-card">
+    <div id="doneTitle">Training complete</div>
+    <div id="doneSub">Starting again</div>
+  </div>
+</div>
+
+<div id="fault">
+  <div class="card">
+    <h3>This page cannot run</h3>
+    <p id="faultBody"></p>
+  </div>
+</div>
+
+<script>
+// The design box. Everything else lives in training.js.
+(function () {
+  function fit() {
+    document.documentElement.style.setProperty('--fit',
+      Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+  }
+  window.addEventListener('resize', fit);
+  fit();
+})();
+</script>
+<script src="training.js"></script>
+</body>
+</html>
