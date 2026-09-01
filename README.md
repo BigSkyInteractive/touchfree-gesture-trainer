@@ -1,13 +1,12 @@
 # TouchFree Gesture Trainer — the live camera feed and recognizer telemetry, on a web page
 
-A person walks up, clicks three targets in the air with a pointed finger, waves
-left and right, and gets a "Good Job". Beside them, a circular live view of
+An interactive web page to onboard users to gesture control using the TouchFree API for gesture control and video frame imbedded in the page.
+
+User clicks three targets a pointed finger, waves left and right, and gets a "Good Job". Beside them, a circular live view of
 themselves with their own skeleton drawn on it, which zooms in on their hand the
 moment the tracker locks onto it.
 
-This is a shipping [TouchFree](https://bigskyinteractive.com) content page,
-published whole as the reference for two things a page can do that are not
-obvious from the outside:
+This is a shipping [TouchFree](https://bigskyinteractive.com) content page, published for free to use as an example how to use gesture interaction and use the camera view from TouchFree with landmark and skeleton overlay.
 
 1. **Show the live camera** with the tracker's own overlay geometry on top.
 2. **Read the recognizer's per-frame telemetry**, so a page can tell somebody
