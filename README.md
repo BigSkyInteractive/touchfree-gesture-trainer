@@ -1,4 +1,4 @@
-# TouchFree Gesture Trainer — the live camera feed and recognizer telemetry, on a web page
+# TouchFree Gesture Trainer sample content that demonstrates the use of gesture control with video and metrics to make a custom interactive experience.
 
 An interactive web page to onboard users to gesture control using the TouchFree API for gesture control and video frame imbedded in the page.
 
